@@ -83,12 +83,35 @@
                 </StackPanel>
                 <StackPanel Orientation="Horizontal">
                     <Slider
-                        Width="120"
+                        Width="200"
                         Margin="0,0,5,0"
                         AutoToolTipPlacement="TopLeft"
                         AutoToolTipPrecision="0"
-                        Maximum="10"
+                        IsSnapToTickEnabled="True"
+                        Maximum="30"
+                        TickFrequency="1"
                         Value="{Binding MaxSyncInterval, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                    <TextBlock VerticalAlignment="Center" Text="{Binding MaxSyncInterval}" />
+                </StackPanel>
+            </StackPanel>
+
+            <StackPanel Margin="15,10,0,0" Orientation="Vertical">
+                <TextBlock
+                    Margin="2.5,0,0,5"
+                    Text="API Timeout (seconds)"
+                    ToolTip="A translation that takes longer than this is dropped and shown as an error. Longer keeps slow sentences; shorter drops stale ones." />
+                <StackPanel Orientation="Horizontal">
+                    <Slider
+                        Width="200"
+                        Margin="0,0,5,0"
+                        AutoToolTipPlacement="TopLeft"
+                        AutoToolTipPrecision="0"
+                        IsSnapToTickEnabled="True"
+                        Maximum="30"
+                        Minimum="5"
+                        TickFrequency="1"
+                        Value="{Binding TranslateTimeout, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                    <TextBlock VerticalAlignment="Center" Text="{Binding TranslateTimeout}" />
                 </StackPanel>
             </StackPanel>
         </StackPanel>

@@ -17,6 +17,7 @@ namespace LiveCaptionsTranslator.models
 
         private int maxIdleInterval = 50;
         private int maxSyncInterval = 3;
+        private int translateTimeout = 12;
         private int numContexts = 2;
         private int displaySentences = 1;
         private bool contextAware = false;
@@ -41,6 +42,16 @@ namespace LiveCaptionsTranslator.models
             {
                 maxSyncInterval = value;
                 OnPropertyChanged("MaxSyncInterval");
+            }
+        }
+        // Seconds before a translate API request is given up.
+        public int TranslateTimeout
+        {
+            get => translateTimeout;
+            set
+            {
+                translateTimeout = Math.Clamp(value, 5, 30);
+                OnPropertyChanged("TranslateTimeout");
             }
         }
         public int NumContexts
