@@ -1,4 +1,5 @@
-﻿using System.Diagnostics;
+﻿using System.Collections.Concurrent;
+using System.Diagnostics;
 using System.IO;
 using System.Text;
 using System.Windows.Automation;
@@ -17,6 +18,11 @@ namespace LiveCaptionsTranslator
 
         private static readonly Queue<string> pendingTextQueue = new();
         private static readonly TranslationTaskQueue translationTaskQueue = new();
+
+        // Raw prefix of the current sentence that has already been force-split and sent.
+        private static string forcedPrefix = string.Empty;
+        // Force-split heads waiting to be translated; treated as complete sentences.
+        private static readonly ConcurrentDictionary<string, byte> forcedSegments = new();
 
         public static AutomationElement? Window
         {
@@ -123,10 +129,47 @@ namespace LiveCaptionsTranslator
                         TextUtil.ShortenDisplaySentence(Caption.DisplayOriginalCaption, TextUtil.VERYLONG_THRESHOLD);
                 }
 
+                // Drop the head of the current sentence that has already been force-split and sent.
+                // `forcedPrefix` is always an exact prefix of the raw sentence, so it survives the next loop.
+                if (forcedPrefix.Length > 0)
+                {
+                    if (!latestCaption.StartsWith(forcedPrefix, StringComparison.Ordinal))
+                        forcedPrefix = string.Empty;
+                    else if (latestCaption.Length == forcedPrefix.Length)
+                    {
+                        Thread.Sleep(25);
+                        continue;
+                    }
+                    else
+                        latestCaption = latestCaption.Substring(forcedPrefix.Length);
+                }
+
                 // Prepare for `OriginalCaption`. If Expanded, only retain the complete sentence.
                 int lastEOS = latestCaption.LastIndexOfAny(TextUtil.PUNC_EOS);
                 if (lastEOS != -1)
                     latestCaption = latestCaption.Substring(0, lastEOS + 1);
+
+                // LiveCaptions seldom emits EOS during continuous speech, so a sentence can grow to
+                // hundreds of characters. Force-split it at the last comma and send the head as complete.
+                if (lastEOS == -1 && Encoding.UTF8.GetByteCount(latestCaption) >= TextUtil.FORCE_SPLIT_THRESHOLD)
+                {
+                    int splitIndex = latestCaption.LastIndexOfAny(TextUtil.PUNC_SPLIT);
+                    if (splitIndex > 0 && !string.IsNullOrWhiteSpace(latestCaption.Substring(splitIndex + 1)))
+                    {
+                        string head = latestCaption.Substring(0, splitIndex + 1).Trim();
+                        forcedPrefix += latestCaption.Substring(0, splitIndex + 1);
+                        forcedSegments.TryAdd(head, 0);
+                        pendingTextQueue.Enqueue(head);
+                        latestCaption = latestCaption.Substring(splitIndex + 1);
+                        syncCount = 0;
+                    }
+                }
+                latestCaption = latestCaption.TrimStart();
+                if (latestCaption.Length == 0)
+                {
+                    Thread.Sleep(25);
+                    continue;
+                }
                 // `OriginalCaption`: The sentence to be really translated.
                 if (string.CompareOrdinal(Caption.OriginalCaption, latestCaption) != 0)
                 {
@@ -173,6 +216,9 @@ namespace LiveCaptionsTranslator
                 if (pendingTextQueue.Count > 0)
                 {
                     var originalSnapshot = pendingTextQueue.Dequeue();
+                    // Complete sentences (EOS or force-split heads) must not be cancelled by later partial ones.
+                    bool isComplete = forcedSegments.TryRemove(originalSnapshot, out _) ||
+                                      Array.IndexOf(TextUtil.PUNC_EOS, originalSnapshot[^1]) != -1;
 
                     if (LogOnlyFlag)
                     {
@@ -182,7 +228,7 @@ namespace LiveCaptionsTranslator
                     else
                     {
                         translationTaskQueue.Enqueue(token => Task.Run(
-                            () => Translate(originalSnapshot, token), token), originalSnapshot);
+                            () => Translate(originalSnapshot, token), token), originalSnapshot, isComplete);
                     }
                 }
 

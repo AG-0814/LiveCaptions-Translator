@@ -47,7 +47,7 @@ namespace LiveCaptionsTranslator.apis
 
         private static readonly HttpClient client = new HttpClient()
         {
-            Timeout = TimeSpan.FromSeconds(8)
+            Timeout = TimeSpan.FromSeconds(12)
         };
         private static int openai_fallback_index = 0;
 
@@ -109,7 +109,7 @@ namespace LiveCaptionsTranslator.apis
             catch (OperationCanceledException ex)
             {
                 if (ex.Message.StartsWith("The request"))
-                    return $"[ERROR] Translation Failed: The request was canceled due to timeout (> 8 seconds), " +
+                    return $"[ERROR] Translation Failed: The request was canceled due to timeout (> 12 seconds), " +
                            $"please use a faster API or check network connection.";
                 throw;
             }
@@ -172,7 +172,7 @@ namespace LiveCaptionsTranslator.apis
             catch (OperationCanceledException ex)
             {
                 if (ex.Message.StartsWith("The request"))
-                    return $"[ERROR] Translation Failed: The request was canceled due to timeout (> 8 seconds), " +
+                    return $"[ERROR] Translation Failed: The request was canceled due to timeout (> 12 seconds), " +
                            $"please use a faster API or check network connection.";
                 throw;
             }
@@ -238,7 +238,7 @@ namespace LiveCaptionsTranslator.apis
             catch (OperationCanceledException ex)
             {
                 if (ex.Message.StartsWith("The request"))
-                    return $"[ERROR] Translation Failed: The request was canceled due to timeout (> 8 seconds), " +
+                    return $"[ERROR] Translation Failed: The request was canceled due to timeout (> 12 seconds), " +
                            $"please use a faster API or check network connection.";
                 throw;
             }
@@ -322,7 +322,7 @@ namespace LiveCaptionsTranslator.apis
             catch (OperationCanceledException ex)
             {
                 if (ex.Message.StartsWith("The request"))
-                    return $"[ERROR] Translation Failed: The request was canceled due to timeout (> 8 seconds), " +
+                    return $"[ERROR] Translation Failed: The request was canceled due to timeout (> 12 seconds), " +
                            $"please use a faster API or check network connection.";
                 throw;
             }
@@ -363,7 +363,7 @@ namespace LiveCaptionsTranslator.apis
             catch (OperationCanceledException ex)
             {
                 if (ex.Message.StartsWith("The request"))
-                    return $"[ERROR] Translation Failed: The request was canceled due to timeout (> 8 seconds), " +
+                    return $"[ERROR] Translation Failed: The request was canceled due to timeout (> 12 seconds), " +
                            $"please use a faster API or check network connection.";
                 throw;
             }
@@ -409,7 +409,7 @@ namespace LiveCaptionsTranslator.apis
             catch (OperationCanceledException ex)
             {
                 if (ex.Message.StartsWith("The request"))
-                    return $"[ERROR] Translation Failed: The request was canceled due to timeout (> 8 seconds), " +
+                    return $"[ERROR] Translation Failed: The request was canceled due to timeout (> 12 seconds), " +
                            $"please use a faster API or check network connection.";
                 throw;
             }
@@ -464,7 +464,7 @@ namespace LiveCaptionsTranslator.apis
             catch (OperationCanceledException ex)
             {
                 if (ex.Message.StartsWith("The request"))
-                    return $"[ERROR] Translation Failed: The request was canceled due to timeout (> 8 seconds), " +
+                    return $"[ERROR] Translation Failed: The request was canceled due to timeout (> 12 seconds), " +
                            $"please use a faster API or check network connection.";
                 throw;
             }
@@ -522,7 +522,7 @@ namespace LiveCaptionsTranslator.apis
             catch (OperationCanceledException ex)
             {
                 if (ex.Message.StartsWith("The request"))
-                    return $"[ERROR] Translation Failed: The request was canceled due to timeout (> 8 seconds), " +
+                    return $"[ERROR] Translation Failed: The request was canceled due to timeout (> 12 seconds), " +
                            $"please use a faster API or check network connection.";
                 throw;
             }
@@ -576,7 +576,7 @@ namespace LiveCaptionsTranslator.apis
             catch (OperationCanceledException ex)
             {
                 if (ex.Message.StartsWith("The request"))
-                    return $"[ERROR] Translation Failed: The request was canceled due to timeout (> 8 seconds), " +
+                    return $"[ERROR] Translation Failed: The request was canceled due to timeout (> 12 seconds), " +
                            $"please use a faster API or check network connection.";
                 throw;
             }
@@ -627,7 +627,7 @@ namespace LiveCaptionsTranslator.apis
             catch (OperationCanceledException ex)
             {
                 if (ex.Message.StartsWith("The request"))
-                    return $"[ERROR] Translation Failed: The request was canceled due to timeout (> 8 seconds), " +
+                    return $"[ERROR] Translation Failed: The request was canceled due to timeout (> 12 seconds), " +
                            $"please use a faster API or check network connection.";
                 throw;
             }
@@ -681,7 +681,7 @@ namespace LiveCaptionsTranslator.apis
             catch (OperationCanceledException ex)
             {
                 if (ex.Message.StartsWith("The request"))
-                    return $"[ERROR] Translation Failed: The request was canceled due to timeout (> 8 seconds), " +
+                    return $"[ERROR] Translation Failed: The request was canceled due to timeout (> 12 seconds), " +
                            $"please use a faster API or check network connection.";
                 throw;
             }

@@ -14,9 +14,10 @@
             output = (string.Empty, false);
         }
 
-        public void Enqueue(Func<CancellationToken, Task<(string, bool)>> worker, string originalText)
+        public void Enqueue(Func<CancellationToken, Task<(string, bool)>> worker, string originalText,
+            bool isComplete = false)
         {
-            var newTranslationTask = new TranslationTask(worker, originalText, new CancellationTokenSource());
+            var newTranslationTask = new TranslationTask(worker, originalText, new CancellationTokenSource(), isComplete);
             lock (_lock)
             {
                 tasks.Add(newTranslationTask);
@@ -32,11 +33,17 @@
         {
             lock (_lock)
             {
+                // Cancel earlier partial translations only; earlier complete sentences keep running
+                // so that they still get displayed and logged.
                 var index = tasks.IndexOf(translationTask);
-                for (int i = 0; i < index; i++)
+                for (int i = index - 1; i >= 0; i--)
+                {
+                    if (tasks[i].IsComplete)
+                        continue;
                     tasks[i].CTS.Cancel();
-                for (int i = index; i >= 0; i--)
                     tasks.RemoveAt(i);
+                }
+                tasks.Remove(translationTask);
             }
 
             output = translationTask.Task.Result;
@@ -55,13 +62,15 @@
         public Task<(string, bool)> Task { get; }
         public string OriginalText { get; }
         public CancellationTokenSource CTS { get; }
+        public bool IsComplete { get; }
 
         public TranslationTask(Func<CancellationToken, Task<(string, bool)>> worker,
-            string originalText, CancellationTokenSource cts)
+            string originalText, CancellationTokenSource cts, bool isComplete = false)
         {
             Task = worker(cts.Token);
             OriginalText = originalText;
             CTS = cts;
+            IsComplete = isComplete;
         }
     }
 }

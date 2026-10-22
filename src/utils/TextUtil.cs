@@ -6,9 +6,13 @@ namespace LiveCaptionsTranslator.utils
     {
         public static readonly char[] PUNC_EOS = ".?!。？！".ToCharArray();
         public static readonly char[] PUNC_COMMA = ",，、—\n".ToCharArray();
+        // Punctuation at which an overly long sentence may be force-split.
+        public static readonly char[] PUNC_SPLIT = ",，;；".ToCharArray();
 
         public const int SHORT_THRESHOLD = 10;
         public const int MEDIUM_THRESHOLD = 40;
+        // About 40 CJK characters (3 bytes each) or 120 Latin characters.
+        public const int FORCE_SPLIT_THRESHOLD = 120;
         public const int LONG_THRESHOLD = 160;
         public const int VERYLONG_THRESHOLD = 220;
 
