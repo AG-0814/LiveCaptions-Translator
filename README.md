@@ -1,4 +1,6 @@
-﻿<div align="center">
+﻿> **This is a modified fork** of [SakiRinn/LiveCaptions-Translator](https://github.com/SakiRinn/LiveCaptions-Translator) for continuous speech with local Ollama models: long captions are split at commas or transition words, complete sentences are no longer dropped, and the API timeout is adjustable. See [MODIFICATIONS.md](MODIFICATIONS.md). The rest of this README is the upstream one.
+
+<div align="center">
 
 <img src="src/LiveCaptions-Translator.ico" width="128" height="128" alt="LiveCaptions-Translator Icon"/>
 
