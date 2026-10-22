@@ -12,6 +12,11 @@ namespace LiveCaptionsTranslator.utils
         [GeneratedRegex(@"([A-Z])\s*\.\s*([A-Z])(?=[A-Za-z]+)")]
         public static partial Regex AcronymWithWords();
 
+        // A `.` right after a digit is a decimal point (e.g. `2.5%`), not the end of a sentence.
+        // It also matches a trailing `2.` because the next digit may not have been recognized yet.
+        [GeneratedRegex(@"(\d)\.(?=\d|$)")]
+        public static partial Regex DecimalPoint();
+
         // Remove redundant spaces and `\n` around punctuation.
         [GeneratedRegex(@"\s*([.!?,])\s*")]
         public static partial Regex PunctuationSpace();

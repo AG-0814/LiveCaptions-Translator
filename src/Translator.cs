@@ -81,6 +81,8 @@ namespace LiveCaptionsTranslator
                     continue;
 
                 // Preprocess
+                // Use a full-width dot for decimals so that `2.5` is not split into two sentences.
+                fullText = RegexPatterns.DecimalPoint().Replace(fullText, "$1．");
                 fullText = RegexPatterns.Acronym().Replace(fullText, "$1$2");
                 fullText = RegexPatterns.AcronymWithWords().Replace(fullText, "$1 $2");
                 fullText = RegexPatterns.PunctuationSpace().Replace(fullText, "$1 ");
