@@ -161,13 +161,20 @@ namespace LiveCaptionsTranslator
 
                 // LiveCaptions seldom emits EOS during continuous speech, so a sentence can grow to
                 // hundreds of characters. Force-split it at the last comma and send the head as complete;
-                // if there is still no comma when it gets very long, send everything recognized so far.
-                int captionBytes = Encoding.UTF8.GetByteCount(latestCaption);
-                if (lastEOS == -1 && captionBytes >= TextUtil.FORCE_SPLIT_THRESHOLD)
+                // without a comma, split before a transition word from `split_rules.json`; failing that,
+                // send everything recognized so far once it gets very long.
+                if (lastEOS == -1 && Encoding.UTF8.GetByteCount(latestCaption) >= TextUtil.FORCE_SPLIT_THRESHOLD)
                 {
                     int splitIndex = latestCaption.LastIndexOfAny(TextUtil.PUNC_SPLIT);
                     if (splitIndex <= 0 || string.IsNullOrWhiteSpace(latestCaption.Substring(splitIndex + 1)))
-                        splitIndex = captionBytes >= TextUtil.HARD_SPLIT_THRESHOLD ? latestCaption.Length - 1 : -1;
+                    {
+                        int wordIndex = SplitRules.FindSplitIndex(latestCaption);
+                        if (wordIndex > 0)
+                            splitIndex = wordIndex - 1;
+                        else
+                            splitIndex = latestCaption.Length >= SplitRules.HardSplitChars(latestCaption)
+                                ? latestCaption.Length - 1 : -1;
+                    }
                     if (splitIndex > 0)
                     {
                         string head = latestCaption.Substring(0, splitIndex + 1).Trim();
@@ -258,8 +265,11 @@ namespace LiveCaptionsTranslator
                     }
                     else
                     {
-                        translationTaskQueue.Enqueue(token => Task.Run(
-                            () => Translate(originalSnapshot, token), token), originalSnapshot, isComplete);
+                        // Fillers only add noise such as "uh" or "Hmm" to the translation.
+                        string textToTranslate = SplitRules.RemoveFillers(originalSnapshot);
+                        if (!string.IsNullOrWhiteSpace(textToTranslate))
+                            translationTaskQueue.Enqueue(token => Task.Run(
+                                () => Translate(textToTranslate, token), token), originalSnapshot, isComplete);
                     }
                 }
 
