@@ -14,6 +14,9 @@ namespace LiveCaptionsTranslator.utils
         public List<string> SplitBefore { get; set; } = new();
         // Removed before the text is sent to the translate API.
         public List<string> Fillers { get; set; } = new();
+        // Punctuation at which a long caption is split first. Null falls back to the built-in rule,
+        // so older split_rules.json files without this field keep working.
+        public string? SplitPunctuation { get; set; }
         // Minimum length of the head before a split word.
         public int MinHeadChars { get; set; } = 15;
         // Send everything recognized so far when no comma or split word is found.
@@ -30,13 +33,17 @@ namespace LiveCaptionsTranslator.utils
             {
                 SplitBefore = new() { "然後", "接下來", "所以", "另外", "但是", "不過", "因為", "好那", "那我們" },
                 Fillers = new() { "呃", "嗯" },
+                // Not `、`: in Chinese it separates list items.
+                SplitPunctuation = ",，;；",
                 MinHeadChars = 15,
                 HardSplitChars = 60,
             },
             ["ja"] = new SplitRule
             {
                 SplitBefore = new() { "それで", "そして", "だから", "でも", "次に", "ただ" },
-                Fillers = new() { "えー", "えっと", "あのー" },
+                Fillers = new() { "えー", "えっと", "あのー", "ええ", "まあ" },
+                // `、` is the ordinary Japanese comma.
+                SplitPunctuation = "、,，;；",
                 MinHeadChars = 15,
                 HardSplitChars = 60,
             },
@@ -44,6 +51,7 @@ namespace LiveCaptionsTranslator.utils
             {
                 SplitBefore = new() { "so", "and then", "but", "because", "anyway", "next" },
                 Fillers = new() { "um", "uh" },
+                SplitPunctuation = ",;",
                 MinHeadChars = 60,
                 HardSplitChars = 180,
             },
@@ -119,6 +127,15 @@ namespace LiveCaptionsTranslator.utils
         }
 
         public static int HardSplitChars(string text) => Get(text)?.HardSplitChars ?? 60;
+
+        public static char[] SplitPunctuation(string text)
+        {
+            string language = DetectLanguage(text);
+            string? punctuation = Get(text)?.SplitPunctuation;
+            if (string.IsNullOrEmpty(punctuation) && defaults.TryGetValue(language, out var builtIn))
+                punctuation = builtIn.SplitPunctuation;
+            return string.IsNullOrEmpty(punctuation) ? TextUtil.PUNC_SPLIT : punctuation.ToCharArray();
+        }
 
         // Remove fillers (with the punctuation right after them) before translation.
         public static string RemoveFillers(string text)

@@ -165,7 +165,7 @@ namespace LiveCaptionsTranslator
                 // send everything recognized so far once it gets very long.
                 if (lastEOS == -1 && Encoding.UTF8.GetByteCount(latestCaption) >= TextUtil.FORCE_SPLIT_THRESHOLD)
                 {
-                    int splitIndex = latestCaption.LastIndexOfAny(TextUtil.PUNC_SPLIT);
+                    int splitIndex = latestCaption.LastIndexOfAny(SplitRules.SplitPunctuation(latestCaption));
                     if (splitIndex <= 0 || string.IsNullOrWhiteSpace(latestCaption.Substring(splitIndex + 1)))
                     {
                         int wordIndex = SplitRules.FindSplitIndex(latestCaption);
