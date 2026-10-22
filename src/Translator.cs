@@ -23,6 +23,8 @@ namespace LiveCaptionsTranslator
         private static string forcedPrefix = string.Empty;
         // Force-split heads waiting to be translated; treated as complete sentences.
         private static readonly ConcurrentDictionary<string, byte> forcedSegments = new();
+        // Complete sentences sent recently, used to drop duplicates. Only touched by `SyncLoop`.
+        private static readonly List<(string text, DateTime time)> recentComplete = new();
 
         public static AutomationElement? Window
         {
@@ -132,18 +134,24 @@ namespace LiveCaptionsTranslator
                 }
 
                 // Drop the head of the current sentence that has already been force-split and sent.
-                // `forcedPrefix` is always an exact prefix of the raw sentence, so it survives the next loop.
+                // LiveCaptions keeps revising recognized words, so match the head by length and similarity
+                // instead of exact text, then re-sync `forcedPrefix` with the revised text.
                 if (forcedPrefix.Length > 0)
                 {
-                    if (!latestCaption.StartsWith(forcedPrefix, StringComparison.Ordinal))
+                    int n = forcedPrefix.Length;
+                    if (latestCaption.Length < n ||
+                        TextUtil.Similarity(latestCaption.Substring(0, n), forcedPrefix) < TextUtil.FORCE_PREFIX_SIM)
                         forcedPrefix = string.Empty;
-                    else if (latestCaption.Length == forcedPrefix.Length)
+                    else if (string.IsNullOrWhiteSpace(latestCaption.Substring(n)))
                     {
                         Thread.Sleep(25);
                         continue;
                     }
                     else
-                        latestCaption = latestCaption.Substring(forcedPrefix.Length);
+                    {
+                        forcedPrefix = latestCaption.Substring(0, n);
+                        latestCaption = latestCaption.Substring(n);
+                    }
                 }
 
                 // Prepare for `OriginalCaption`. If Expanded, only retain the complete sentence.
@@ -152,16 +160,19 @@ namespace LiveCaptionsTranslator
                     latestCaption = latestCaption.Substring(0, lastEOS + 1);
 
                 // LiveCaptions seldom emits EOS during continuous speech, so a sentence can grow to
-                // hundreds of characters. Force-split it at the last comma and send the head as complete.
-                if (lastEOS == -1 && Encoding.UTF8.GetByteCount(latestCaption) >= TextUtil.FORCE_SPLIT_THRESHOLD)
+                // hundreds of characters. Force-split it at the last comma and send the head as complete;
+                // if there is still no comma when it gets very long, send everything recognized so far.
+                int captionBytes = Encoding.UTF8.GetByteCount(latestCaption);
+                if (lastEOS == -1 && captionBytes >= TextUtil.FORCE_SPLIT_THRESHOLD)
                 {
                     int splitIndex = latestCaption.LastIndexOfAny(TextUtil.PUNC_SPLIT);
-                    if (splitIndex > 0 && !string.IsNullOrWhiteSpace(latestCaption.Substring(splitIndex + 1)))
+                    if (splitIndex <= 0 || string.IsNullOrWhiteSpace(latestCaption.Substring(splitIndex + 1)))
+                        splitIndex = captionBytes >= TextUtil.HARD_SPLIT_THRESHOLD ? latestCaption.Length - 1 : -1;
+                    if (splitIndex > 0)
                     {
                         string head = latestCaption.Substring(0, splitIndex + 1).Trim();
                         forcedPrefix += latestCaption.Substring(0, splitIndex + 1);
-                        forcedSegments.TryAdd(head, 0);
-                        pendingTextQueue.Enqueue(head);
+                        EnqueueComplete(head, isForced: true);
                         latestCaption = latestCaption.Substring(splitIndex + 1);
                         syncCount = 0;
                     }
@@ -181,7 +192,7 @@ namespace LiveCaptionsTranslator
                     if (Array.IndexOf(TextUtil.PUNC_EOS, Caption.OriginalCaption[^1]) != -1)
                     {
                         syncCount = 0;
-                        pendingTextQueue.Enqueue(Caption.OriginalCaption);
+                        EnqueueComplete(Caption.OriginalCaption, isForced: false);
                     }
                     else if (Encoding.UTF8.GetByteCount(Caption.OriginalCaption) >= TextUtil.SHORT_THRESHOLD)
                         syncCount++;
@@ -200,6 +211,24 @@ namespace LiveCaptionsTranslator
 
                 Thread.Sleep(25);
             }
+        }
+
+        // Enqueue a complete sentence or a force-split head, skipping it if (nearly) the same text
+        // was sent recently. Revised captions otherwise flood the translate API with duplicates.
+        private static void EnqueueComplete(string text, bool isForced)
+        {
+            var now = DateTime.UtcNow;
+            recentComplete.RemoveAll(r => (now - r.time).TotalSeconds > TextUtil.DEDUP_WINDOW_SECONDS);
+            // Plain edit-distance ratio: `TextUtil.Similarity` treats any prefix as identical, which
+            // would wrongly drop a full sentence whose head was sent before.
+            if (recentComplete.Any(r =>
+                    1.0 - (double)TextUtil.LevenshteinDistance(r.text, text) /
+                    Math.Max(1, Math.Max(r.text.Length, text.Length)) >= TextUtil.DEDUP_SIM))
+                return;
+            recentComplete.Add((text, now));
+            if (isForced)
+                forcedSegments.TryAdd(text, 0);
+            pendingTextQueue.Enqueue(text);
         }
 
         public static async Task TranslateLoop()

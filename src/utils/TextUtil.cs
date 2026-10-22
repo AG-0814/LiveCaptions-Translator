@@ -13,6 +13,13 @@ namespace LiveCaptionsTranslator.utils
         public const int MEDIUM_THRESHOLD = 40;
         // About 40 CJK characters (3 bytes each) or 120 Latin characters.
         public const int FORCE_SPLIT_THRESHOLD = 120;
+        // About 60 CJK characters: send everything recognized so far even without a comma.
+        public const int HARD_SPLIT_THRESHOLD = 180;
+        // How similar the start of the current sentence must be to the already-sent head.
+        public const double FORCE_PREFIX_SIM = 0.7;
+        // Sentences sent within this window that are at least this similar are treated as duplicates.
+        public const double DEDUP_WINDOW_SECONDS = 20;
+        public const double DEDUP_SIM = 0.85;
         public const int LONG_THRESHOLD = 160;
         public const int VERYLONG_THRESHOLD = 220;
 
