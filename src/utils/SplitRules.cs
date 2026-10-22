@@ -128,6 +128,8 @@ namespace LiveCaptionsTranslator.utils
 
         public static int HardSplitChars(string text) => Get(text)?.HardSplitChars ?? 60;
 
+        public static int MinHeadChars(string text) => Get(text)?.MinHeadChars ?? 15;
+
         public static char[] SplitPunctuation(string text)
         {
             string language = DetectLanguage(text);

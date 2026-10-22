@@ -166,7 +166,9 @@ namespace LiveCaptionsTranslator
                 if (lastEOS == -1 && Encoding.UTF8.GetByteCount(latestCaption) >= TextUtil.FORCE_SPLIT_THRESHOLD)
                 {
                     int splitIndex = latestCaption.LastIndexOfAny(SplitRules.SplitPunctuation(latestCaption));
-                    if (splitIndex <= 0 || string.IsNullOrWhiteSpace(latestCaption.Substring(splitIndex + 1)))
+                    // A comma too close to the start would only cut off a tiny fragment such as `たり、`.
+                    if (splitIndex <= 0 || splitIndex + 1 < SplitRules.MinHeadChars(latestCaption) ||
+                        string.IsNullOrWhiteSpace(latestCaption.Substring(splitIndex + 1)))
                     {
                         int wordIndex = SplitRules.FindSplitIndex(latestCaption);
                         if (wordIndex > 0)
@@ -224,6 +226,9 @@ namespace LiveCaptionsTranslator
         // was sent recently. Revised captions otherwise flood the translate API with duplicates.
         private static void EnqueueComplete(string text, bool isForced)
         {
+            // Nothing to translate, e.g. a lone `。` left over after a hard split.
+            if (!text.Any(char.IsLetterOrDigit))
+                return;
             var now = DateTime.UtcNow;
             recentComplete.RemoveAll(r => (now - r.time).TotalSeconds > TextUtil.DEDUP_WINDOW_SECONDS);
             // Plain edit-distance ratio: `TextUtil.Similarity` treats any prefix as identical, which
