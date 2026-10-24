@@ -40,7 +40,14 @@ namespace LiveCaptionsTranslator.models
     public class OllamaRequestData(string model, List<BaseLLMConfig.Message> messages, double temperature)
         : BaseLLMRequestData(model, messages, temperature)
     {
+        // Ollama's native API ignores top-level sampling fields; they only take effect inside `options`.
+        public class Options
+        {
+            public double temperature { get; set; }
+        }
+
         public bool think { get; set; } = false;
+        public Options options { get; set; } = new() { temperature = temperature };
     }
 
     public class OpenRouterRequestData(string model, List<BaseLLMConfig.Message> messages, double temperature)

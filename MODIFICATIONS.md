@@ -29,6 +29,8 @@ sentence-ending punctuation.
 
 - `keep_alive` defaults to -1, so the model is not unloaded after 10 idle minutes.
 - `load_duration` is a `long`; loads over about 2 seconds used to fail with an Int32 conversion error.
+- The temperature setting is sent inside `options` (`src/models/RequestData.cs`). Ollama's native
+  `/api/chat` ignores a top-level `temperature`, so the setting had no effect before.
 
 **Settings** (`src/models/Setting.cs`, `src/pages/SettingPage.xaml`, `src/apis/TranslateAPI.cs`)
 
